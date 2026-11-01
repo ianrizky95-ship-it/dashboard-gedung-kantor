@@ -1,6 +1,6 @@
 import streamlit as st
 
-st.set_page_config(page_title="Dashboard Gedung Kantor", layout="wide")
+st.set_page_config(page_title="PLN Trunojoyo Green Building", page_icon="🌿", layout="wide")
 
 halaman = st.navigation({
     "Pemantauan": [
@@ -16,4 +16,19 @@ halaman = st.navigation({
         st.Page("halaman/asisten.py", title="Asisten Operator", icon="🤖"),
     ],
 })
+
+# --- Header identitas (tampil di semua halaman) ---
+kiri, kanan = st.columns([5, 2], vertical_alignment="center")
+with kiri:
+    st.markdown("#### 🌿 PLN Trunojoyo Green Building")
+    st.caption("Gedung kantor 10 lantai + basement · ±11.000 m² · "
+               "Lapisan Enterprise: data BMS dibaca via OPC UA")
+with kanan:
+    st.badge("Studi kasus tugas kuliah · data simulasi", icon=":material/science:", color="green")
+st.divider()
+
+# --- Footer sidebar ---
+st.sidebar.caption("Mata kuliah Gedung dan Rumah Cerdas · S2 ITS")
+st.sidebar.caption("Energi: data simulasi")
+
 halaman.run()

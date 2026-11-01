@@ -21,3 +21,11 @@ def muat_energi():
 @st.cache_data
 def muat_alarm():
     return pd.read_parquet("data/processed/alarm.parquet")
+def tanda(x):
+    return None if pd.isna(x) else f"{'+' if x >= 0 else ''}{angka(x, 1)}%"
+
+def kartu(kol, label, nilai, delta=None, keterangan=None, bantu=None):
+    with kol.container(border=True):
+        st.metric(label, nilai, delta, delta_color="inverse", help=bantu)
+        if keterangan:
+            st.caption(keterangan)
