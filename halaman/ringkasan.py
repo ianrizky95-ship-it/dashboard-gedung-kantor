@@ -2,6 +2,12 @@ import altair as alt
 import pandas as pd
 import streamlit as st
 from data import TARIF, LUAS, SISTEM, angka, rp, tanda, kartu, muat_energi, muat_alarm, waktu_sekarang
+from olah import alpha_filter, insight
+from data import muat_kondisi, muat_unit
+from data import kondisi_terkini
+from komponen import annunciator
+from olah import kalimat_prediksi
+from data import muat_prediksi, muat_backtest
 df = muat_energi()
 sekarang = waktu_sekarang()
 df = df[df["timestamp"] <= sekarang]                 # sembunyikan "masa depan"
@@ -22,7 +28,7 @@ kwh_bulan = total[bulan_ini].sum() * 0.25
 kwh_luar = total[bulan_ini & ~jam_kerja].sum() * 0.25
 
 st.header("Ringkasan Gedung")
-st.caption(f"Data per {sekarang:%d %b %Y %H:%M} · energi dummy (akan diganti proxy CU-BEMS)")
+st.caption(f"Data per {sekarang:%d %b %Y %H:%M} · energi: proxy CU-BEMS")
 
 
 # Pembanding: kemarin sampai jam yang sama, dan beban minggu lalu di jam yang sama
@@ -47,6 +53,19 @@ kartu(k4, ":material/nightlight: Luar jam kerja (30 hari)",
 kartu(k5, ":material/notifications_active: Alarm aktif", len(aktif),
       keterangan=f"{(aktif['prioritas'] == 'Tinggi').sum()} prioritas tinggi")
 
+# ---------- Annunciator + Executive Summary ----------
+_k = kondisi_terkini()
+annunciator(_k)
+
+with st.container(border=True):
+    st.subheader("Executive Summary")
+    st.caption("Dihitung otomatis dari data 7 hari terakhir dan kondisi unit hari ini.")
+    _sekarang = waktu_sekarang()
+    _kalimat = insight(muat_energi(), muat_kondisi(), muat_unit(), _sekarang, TARIF, k_hari_ini=_k)
+    _prediksi = kalimat_prediksi(muat_prediksi(), muat_backtest(), _sekarang, TARIF)
+if _prediksi:
+    _kalimat.append(_prediksi)
+    st.markdown("\n".join(f"- {k}" for k in _kalimat))
 kiri, kanan = st.columns([3, 2])
 
 with kiri:
@@ -109,3 +128,13 @@ for kol, s in zip(st.columns(6), SISTEM):
 
 st.page_link("halaman/status_sistem.py", label="Lihat log alarm lengkap",
              icon=":material/arrow_forward:")
+
+
+# ---------- Tren beban 7 hari dengan alpha filter ----------
+st.subheader("Tren beban 7 hari")
+alpha = st.slider("Alpha filter (makin kecil, makin halus)", 0.05, 1.0, 0.3, 0.05)
+_e = muat_energi()
+_e = _e[(_e["timestamp"] > _sekarang - pd.Timedelta(days=7)) & (_e["timestamp"] <= _sekarang)]
+_beban = _e.groupby("timestamp")["kW"].sum()
+st.line_chart(pd.DataFrame({"Asli": _beban, "Dihaluskan": alpha_filter(_beban, alpha)}),
+              y_label="kW", color=["#64748B", "#10B981"])
