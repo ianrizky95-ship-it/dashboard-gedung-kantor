@@ -1,0 +1,5 @@
+jenis,umur_nominal_jam,siaga_persen,waspada_persen,kritis_persen,indikator,indikator_siaga,indikator_waspada,indikator_kritis,sumber
+AC,2000,70,85,95,rasio_daya,1.4,1.6,2.0,ASHRAE Standard 180 / Panduan Servis AC VRF Daikin (Setiap 2000 Jam Operasional)
+POMPA,20000,70,85,95,suhu_motor_maks_C,75.0,80.0,90.0,Standar Isolasi Motor NEMA Kelas B (Suhu Maksimum Operasional Aman 75-90C)
+LAMPU,30000,70,85,95,,,,,Datasheet LED L70 Philips/Osram (Umur nominal rata-rata 30.000 jam)
+CCTV,50000,70,85,95,,,,,Datasheet Hikvision/Axis MTBF IP Camera (Rata-rata umur pakai 50.000 jam)
