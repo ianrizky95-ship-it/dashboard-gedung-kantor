@@ -73,9 +73,14 @@ with tab_energi:
             strokeDash=[2, 3], color="#94A3B8").encode(x=alt.X("t:T", title=None))
         st.altair_chart((pita + garis_lain + garis_a + berjalan + garis_p + awal)
                         .properties(height=340), width="stretch")
-        st.caption(f"Putih = aktual (6 minggu terakhir) · hijau = prediksi {metode} dengan pita 95% · "
-                   f"abu putus-putus = metode lain · lingkaran kosong = hari ini, belum lengkap. "
-                   f"Model dilatih dengan data sampai {latih_sampai:%d %b %Y}.")
+        st.markdown(
+            f"<div style='font-size:0.85rem; color:#94A3B8; line-height:1.9'>"
+            f"<span style='color:#E5E7EB; font-weight:600'>━● Putih = aktual (6 minggu terakhir)</span> · "
+            f"<span style='color:#10B981; font-weight:600'>━● Hijau = prediksi {metode} dengan pita 95%</span> · "
+            f"<span style='color:#64748B; font-weight:600'>╌╌ Abu putus-putus = metode lain</span> · "
+            f"<span style='color:#E5E7EB'>○ Lingkaran kosong = hari ini, belum lengkap</span><br>"
+            f"Model dilatih dengan data sampai {latih_sampai:%d %b %Y}.</div>",
+            unsafe_allow_html=True)
 
         # ---------- Tabel harian ----------
         with st.expander("Tabel prediksi harian"):
