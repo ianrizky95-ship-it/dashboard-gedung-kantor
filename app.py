@@ -16,7 +16,6 @@ halaman = st.navigation({
     ],
     "Analitik": [
         st.Page("halaman/prediksi.py", title="Prediksi", icon="📈"),
-        st.Page("halaman/simulasi.py", title="Simulasi Retrofit", icon="💡"),
     ],
     "Asisten": [
         st.Page("halaman/asisten.py", title="Asisten Operator", icon="🤖"),
