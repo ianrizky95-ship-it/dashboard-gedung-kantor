@@ -22,12 +22,18 @@ def proses(teks, kunci=None):
     st.session_state["chat"].append({"role": "user", "content": teks})
     with st.spinner("Asisten sedang menyiapkan jawaban…"):
         if kunci is None and asisten.minta_jadwal(teks):
-            h = asisten.usulan(teks)
-            if "ditolak" in h:
-                isi = f"Permintaan ini tidak bisa dijadikan jadwal: **{h['ditolak']}**"
-            else:
-                st.session_state["usulan_ai"] = h["usulan"]
-                isi = "Usulan jadwalnya saya susun di bawah. Periksa dulu, lalu **Setujui** atau **Tolak**."
+            hasil = asisten.usulan_banyak(teks)          # AC + lampu sekaligus -> 2 usulan
+            usul = [h["usulan"] for h in hasil if "usulan" in h]
+            alasan = [h["ditolak"] for h in hasil if "ditolak" in h]
+            if usul:
+                st.session_state["usulan_ai"] = usul
+            bagian = []
+            if usul:
+                bagian.append(f"{len(usul)} usulan jadwal saya susun di bawah. "
+                              "Periksa dulu, lalu **Setujui** atau **Tolak**.")
+            bagian += [f"Permintaan ini tidak bisa dijadikan jadwal: **{a}**" for a in alasan]
+            isi = "\n\n".join(bagian)
+            h = hasil[0]
         else:
             h = asisten.jawab(teks, kunci)
             isi = h["teks"]
@@ -51,27 +57,36 @@ for m in st.session_state["chat"]:
             st.caption(m["sumber"])
 
 # ---------- 3. Kartu usulan jadwal (konfirmasi operator) ----------
-u = st.session_state.get("usulan_ai")
-if u:
+daftar = st.session_state.get("usulan_ai") or []
+if isinstance(daftar, dict):                             # sisa format lama (satu usulan)
+    daftar = [daftar]
+for i, u in enumerate(daftar):
+    judul = "Usulan jadwal dari asisten" + (f" ({i + 1}/{len(daftar)})" if len(daftar) > 1 else "")
     with st.container(border=True):
-        st.markdown("**Usulan jadwal dari asisten**")
+        st.markdown(f"**{judul}**")
         tampil = pd.DataFrame([u]).fillna({"zona": "seluruh lantai"})
         st.dataframe(tampil[["sistem", "lantai", "zona", "mode", "jam_mulai", "jam_selesai"]],
                      hide_index=True, width="stretch",
                      column_config={"sistem": "Sistem", "lantai": "Lantai", "zona": "Zona", "mode": "Mode",
                                     "jam_mulai": "Mulai", "jam_selesai": "Selesai"})
         if u["mode"] in ("lembur", "manual"):
-            kwh, biaya = estimasi_tambahan(muat_energi(), u["lantai"], u["jam_mulai"], u["jam_selesai"],
+            beban, nama = ("AC", "AC") if u["sistem"] == "HVAC" else ("LGT", "lampu")   # hanya beban sistem ini
+            e = muat_energi()
+            kwh, biaya = estimasi_tambahan(e[e["beban"] == beban], u["lantai"], u["jam_mulai"], u["jam_selesai"],
                                            sekarang, TARIF)
-            st.caption(f"Perkiraan tambahan energi: {angka(kwh)} kWh ≈ {rp(biaya)}")
+            st.caption(f"Perkiraan tambahan energi {nama}: {angka(kwh)} kWh ≈ {rp(biaya)}")
         kiri, kanan, _ = st.columns([1, 1, 3])
-        setuju = kiri.button("✅ Setujui", type="primary", key="ai_setuju")
-        tolak = kanan.button("✖ Tolak", key="ai_tolak")
+        setuju = kiri.button("✅ Setujui", type="primary", key=f"ai_setuju_{i}")
+        tolak = kanan.button("✖ Tolak", key=f"ai_tolak_{i}")
         if setuju or tolak:
             status = "disetujui" if setuju else "ditolak"
             tambah_usulan(u)
             ubah_status(len(muat_jadwal()) - 1, status)
-            st.session_state.pop("usulan_ai")
+            sisa = daftar[:i] + daftar[i + 1:]
+            if sisa:
+                st.session_state["usulan_ai"] = sisa
+            else:
+                st.session_state.pop("usulan_ai", None)
             st.session_state["chat"].append({
                 "role": "assistant", "sumber": "Operator",
                 "content": f"Usulan {u['sistem']} lantai {u['lantai']} {u['mode']} "
@@ -86,4 +101,5 @@ with kiri.expander("Data yang dikirim ke AI (konteks)"):
 if kanan.button("Hapus percakapan"):
     st.session_state["chat"] = []
     st.session_state.pop("usulan_ai", None)
+    st.session_state.pop("jadwal_terakhir", None)
     st.rerun()
