@@ -330,3 +330,19 @@ def usulan(teks):
     if "ditolak" in hasil:
         return {"ditolak": hasil["ditolak"], "sumber": sumber}
     return {"usulan": hasil, "sumber": sumber}
+
+def usulan_banyak(teks):
+    """AC dan lampu dalam satu permintaan -> dua usulan terpisah. Hasil: list dari usulan()."""
+    t = teks.lower()
+    ada_ac = re.search(r"\b(ac|hvac|pendingin)\b", t)
+    ada_lampu = re.search(r"lampu|pencahayaan", t)
+    if not (ada_ac and ada_lampu):
+        return [usulan(teks)]
+    hasil = []
+    for sistem in ("HVAC", "Pencahayaan"):
+        h = usulan(f"{teks}\nBuat usulan HANYA untuk sistem {sistem}.")
+        if "usulan" in h:
+            h["usulan"]["sistem"] = sistem
+        hasil.append(h)
+    st.session_state["jadwal_terakhir"] = teks
+    return hasil
